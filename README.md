@@ -32,8 +32,37 @@ This repo adds a small dispatcher wrapper + reproducible build steps + prebuilt 
 
 ---
 
-## Binaries & layout
-Release artifacts live under architecture folders:
+## Where to download the binaries (for non-developers)
+
+On the GitHub repository page, look at the **right-hand sidebar** or the **“Releases”** tab.  
+Click the latest release, then download the asset that matches your system:
+
+- `madmax39-macos-arm64` (Apple Silicon)  
+- `madmax39-linux-x64` (x86_64)  
+- `madmax39-linux-aarch64` (ARM64)  
+- `madmax39-windows-x64.exe` (Windows)  
+- `SHA256SUMS` (checksums) and optionally `SHA256SUMS.asc` (signature)
+
+> These files appear as **Release assets**. They are **not** stored in the repository tree.
+
+---
+
+## What are “artifacts”?
+
+“Artifacts” are the **build outputs** — the files produced by the build process, such as:
+- the compiled executables (`madmax39-*`),
+- the verification file `SHA256SUMS`,
+- optionally the signature `SHA256SUMS.asc`.
+
+On GitHub Releases, artifacts are shown as **Assets** you can download.  
+They’re separate from the source code in the repo’s file list and commit history.  
+If you build locally, you’ll see them first under the `dist/` folders before uploading.
+
+---
+
+## Binaries & layout (local build folders)
+
+During local builds we organize artifacts like this:
 
 ~~~
 dist/
@@ -98,7 +127,7 @@ Scripts are in `scripts/` and drop results into `dist/ARCH/`.
 # → dist/linux-aarch64/madmax39
 ~~~
 
-> These Docker scripts use `quay.io/pypa/manylinux2014_*`, build OpenSSL 1.1.1w and a shared-lib Python 3.11, then run PyInstaller. The result is broadly compatible with old glibc.
+> These Docker scripts use `quay.io/pypa/manylinux2014_*`, build OpenSSL 1.1.1w and a shared-lib Python 3.11 (with system libffi), then run PyInstaller. The result is broadly compatible with old glibc.
 
 ---
 
@@ -142,7 +171,7 @@ cd dist
 shasum -a 256 -c SHA256SUMS
 ~~~
 
-(Optionally sign `SHA256SUMS` with your GPG key and publish `SHA256SUMS.asc`.)
+(If provided, verify `SHA256SUMS.asc` with your GPG keyring.)
 
 ---
 
@@ -161,7 +190,8 @@ madmax39-binaries/
 │  ├─ build-linux-x64-manylinux.sh
 │  ├─ build-linux-aarch64-manylinux.sh
 │  ├─ build-windows-x64-gitbash.sh
-│  └─ make-checksums.sh
+│  ├─ make-checksums.sh
+│  └─ test-manylinux.sh
 ├─ upstream-licenses/
 │  ├─ SLIP39gen.LICENSE
 │  └─ SLIP39rec.LICENSE
@@ -179,3 +209,4 @@ Upstream projects are **GPL-3.0**; distributing binaries means you must comply w
 ---
 
 **Reminder:** use air-gapped machines only, and never store mnemonics digitally. Paper or metal, always.
+
