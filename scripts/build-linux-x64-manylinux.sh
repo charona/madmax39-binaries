@@ -8,19 +8,51 @@ docker run --rm -t \
   -v "$PWD":/io -w /io \
   quay.io/pypa/manylinux2014_x86_64 /bin/bash -lc '
     set -euo pipefail
-    yum -y install gcc make perl-core wget tar zlib-devel bzip2-devel xz-devel libffi-devel readline-devel sqlite-devel
+
+    # Toolchain & headers (include libffi-devel for _ctypes)
+    yum -y install \
+      gcc make perl-core wget tar \
+      zlib-devel bzip2-devel xz-devel \
+      libffi-devel readline-devel sqlite-devel
+
+    # OpenSSL (matches what you had)
     cd /tmp && wget -q https://www.openssl.org/source/openssl-1.1.1w.tar.gz && tar xf openssl-1.1.1w.tar.gz
-    cd openssl-1.1.1w && ./config --prefix=/opt/openssl --libdir=lib shared zlib && make -j"$(nproc)" && make install_sw
+    cd openssl-1.1.1w
+    ./config --prefix=/opt/openssl --libdir=lib shared zlib
+    make -j"$(nproc)" && make install_sw
+
+    # Build Python 3.11 with shared lib, OpenSSL, and **system libffi** for _ctypes
     cd /tmp && wget -q https://www.python.org/ftp/python/3.11.9/Python-3.11.9.tgz && tar xf Python-3.11.9.tgz
-    cd Python-3.11.9 && ./configure --prefix=/opt/python/cp311-shared --enable-optimizations --enable-shared --with-openssl=/opt/openssl LDFLAGS="-Wl,-rpath=/opt/python/cp311-shared/lib:/opt/openssl/lib"
+    cd Python-3.11.9
+    ./configure \
+      --prefix=/opt/python/cp311-shared \
+      --enable-optimizations \
+      --enable-shared \
+      --with-system-ffi \
+      --with-openssl=/opt/openssl \
+      LDFLAGS="-Wl,-rpath=/opt/python/cp311-shared/lib:/opt/openssl/lib"
     make -j"$(nproc)" && make install
+
     export PATH=/opt/python/cp311-shared/bin:$PATH
     export LD_LIBRARY_PATH=/opt/openssl/lib:/opt/python/cp311-shared/lib:$LD_LIBRARY_PATH
-    python3.11 -m ensurepip && python3.11 -m pip install -U pip
+
+    # Pip + deps
+    python3.11 -m ensurepip
+    python3.11 -m pip install -U pip
     pip install pyinstaller shamir-mnemonic "cryptography<43" mnemonic
+
+    # Quick sanity: ensure _ctypes exists
+    python3.11 - <<PY
+import ctypes, _ctypes
+print("ctypes OK")
+PY
+
+    # Build
     cd /io
     rm -rf build dist/linux-x64
-    pyinstaller madmax39.spec --distpath dist/linux-x64 --name madmax39
+    pyinstaller madmax39.spec --distpath dist/linux-x64
+
+    # set ownership back to host
     chown -R "$HOST_UID:$HOST_GID" dist
   '
 echo "✅ Built dist/linux-x64/madmax39"

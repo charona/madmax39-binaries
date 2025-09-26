@@ -10,6 +10,6 @@ python -m pip install -U pip
 pip install pyinstaller shamir-mnemonic mnemonic "cryptography<43"
 
 rm -rf build "dist/windows-x64"
-pyinstaller madmax39.spec --distpath "dist/windows-x64" --name madmax39
+pyinstaller madmax39.spec --distpath "dist/windows-x64"
 echo "✅ Built dist/windows-x64/madmax39.exe"
 
